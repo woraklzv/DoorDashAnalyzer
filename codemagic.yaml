@@ -3,10 +3,16 @@ workflows:
     name: Build DoorDash Analyzer
     max_build_duration: 30
     environment:
-      android:
-        image: default
+      vars:
+        JAVA_HOME: /usr/lib/jvm/java-11-openjdk
     scripts:
-      - script: chmod +x gradlew
-      - script: ./gradlew assembleDebug
+      - name: Configurar permisos
+        script: chmod +x ./gradlew
+      - name: Compilar APK
+        script: ./gradlew assembleDebug
     artifacts:
       - app/build/outputs/**/*.apk
+    publishing:
+      email:
+        recipients:
+          - TU_EMAIL@ejemplo.com
