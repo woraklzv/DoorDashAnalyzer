@@ -1,17 +1,10 @@
 workflows:
-  android-simple-build:
-    name: Android Simple Build
-    environment:
-      android_signing:
-        - android_release
+  android-debug-build:
+    name: Android Debug Build
     scripts:
-      - name: Build Debug APK
+      - name: Build APK
         script: |
           chmod +x ./gradlew
           ./gradlew assembleDebug
     artifacts:
-      - app/build/outputs/**/*.apk
-    publishing:
-      email:
-        recipients:
-          - user@example.com
+      - app/build/outputs/apk/debug/*.apk
