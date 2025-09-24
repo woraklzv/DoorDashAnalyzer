@@ -1,14 +1,18 @@
 workflows:
-  build-android:
-    name: Build Android
+  android-build:
+    name: Android Build
+    environment:
+      groups:
+        - android_config
     scripts:
+      - name: Install Gradle
+        script: |
+          # Instalar Gradle directamente
+          wget https://services.gradle.org/distributions/gradle-8.0-bin.zip
+          unzip gradle-8.0-bin.zip
+          export PATH=$PWD/gradle-8.0/bin:$PATH
       - name: Build APK
         script: |
-          # Verificar archivos
-          ls -la
-          ls -la gradle/
-          # Ejecutar build
-          ./gradlew tasks
-          ./gradlew assembleDebug
+          gradle assembleDebug --stacktrace
     artifacts:
-      - app/build/outputs/apk/debug/app-debug.apk
+      - app/build/outputs/apk/debug/*.apk
