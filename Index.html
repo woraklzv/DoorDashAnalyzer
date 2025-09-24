@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DasherAnalyst PRO</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; 
+            padding: 20px;
+        }
+        .container { 
+            max-width: 100%; 
+            background: white;
+            border-radius: 15px; 
+            padding: 25px; 
+            margin: 0 auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 25px; font-size: 2em; }
+        
+        .meta-section { background: #e3f2fd; padding: 20px; border-radius: 12px; margin-bottom: 25px; }
+        .meta-input-group { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; }
+        .meta-input-group input { flex: 1; padding: 12px; border: 2px solid #bbdefb; border-radius: 8px; font-size: 1.1em; text-align: center; }
+        .barra-progreso { width: 100%; height: 15px; background: #e0e0e0; border-radius: 8px; overflow: hidden; margin: 12px 0; }
+        .progreso-lleno { height: 100%; background: linear-gradient(90deg, #4caf50, #8bc34a); transition: width 0.3s ease; }
+        .estadisticas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .estadistica { background: white; padding: 10px; border-radius: 8px; text-align: center; font-size: 0.9em; }
+        
+        .input-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #2c3e50; }
+        input { width: 100%; padding: 15px; border: 2px solid #e1e5e9; border-radius: 10px; font-size: 1.1em; background: #f8f9fa; }
+        .btn { width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 18px; border-radius: 10px; font-size: 1.2em; font-weight: 600; margin: 20px 0; cursor: pointer; }
+        .result { padding: 20px; border-radius: 10px; text-align: center; font-weight: 600; margin: 20px 0; display: none; }
+        .excelente { background: #d4edda; color: #155724; display: block; }
+        .considerar { background: #fff3cd; color: #856404; display: block; }
+        .rechazar { background: #f8d7da; color: #721c24; display: block; }
+        .btn-secundario { background: #6c757d; padding: 12px; border-radius: 8px; color: white; border: none; font-size: 0.9em; cursor: pointer; margin: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚗 DasherAnalyst PRO</h1>
+        
+        <div class="meta-section">
+            <div class="meta-input-group">
+                <label style="margin:0;">Meta/hora:</label>
+                <input type="number" id="metaHora" value="20" min="10" max="100">
+                <span style="font-weight:600;">$</span>
+            </div>
+            
+            <div style="text-align:center; margin-bottom:12px;">
+                <div>Progreso: <strong id="gananciaActual">$0</strong> de <strong id="metaActual">$20</strong></div>
+                <div id="tiempoRestante" style="font-size:0.9em;">Tiempo: --</div>
+            </div>
+            
+            <div class="barra-progreso">
+                <div id="progresoBarra" class="progreso-lleno" style="width: 0%"></div>
+            </div>
+            
+            <div class="estadisticas">
+                <div class="estadistica">
+                    <div>Órdenes</div>
+                    <strong id="totalOrdenes">0</strong>
+                </div>
+                <div class="estadistica">
+                    <div>Ganancia</div>
+                    <strong id="gananciaTotal">$0</strong>
+                </div>
+            </div>
+            
+            <div style="display:flex; gap:8px; margin-top:12px;">
+                <button class="btn-secundario" onclick="reiniciarProgreso()" style="flex:1;">🔄 Reiniciar</button>
+                <button class="btn-secundario" onclick="simularOrden()" style="flex:1;">🎯 Simular</button>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <label>💰 Pago ($):</label>
+            <input type="number" id="pago" placeholder="Ej: 8.75">
+        </div>
+        
+        <div class="input-group">
+            <label>📏 Distancia (millas):</label>
+            <input type="number" id="distancia" placeholder="Ej: 5.2">
+        </div>
+        
+        <button onclick="analizarOrden()" class="btn">📊 ANALIZAR ORDEN</button>
+        
+        <div id="resultado" class="result"></div>
+        
+        <div style="background:#f8f9fa; padding:15px; border-radius:10px; margin-top:20px;">
+            <div style="font-weight:600; margin-bottom:10px;">💡 Reglas de Rentabilidad</div>
+            <div>✅ >$2.00/milla | 🟡 $1.50-2.00/milla | ❌ <$1.50/milla</div>
+        </div>
+    </div>
+
+    <script>
+        let gananciaAcumulada = 0;
+        let totalOrdenes = 0;
+        let inicioSesion = new Date();
+        let metaHora = 20;
+
+        function inicializarApp() {
+            actualizarMeta();
+            actualizarProgreso();
+            document.getElementById('pago').focus();
+        }
+
+        function actualizarMeta() {
+            metaHora = parseInt(document.getElementById('metaHora').value) || 20;
+            document.getElementById('metaActual').textContent = '$' + metaHora;
+            actualizarProgreso();
+        }
+
+        function analizarOrden() {
+            const pago = parseFloat(document.getElementById('pago').value);
+            const distancia = parseFloat(document.getElementById('distancia').value);
+            
+            if (!pago || !distancia || pago <= 0 || distancia <= 0) {
+                alert('Ingresa pago y distancia válidos');
+                return;
+            }
+            
+            const dolaresPorMilla = pago / distancia;
+            const resultadoDiv = document.getElementById('resultado');
+            
+            let veredicto = '', clase = '', aceptada = false;
+            
+            if (dolaresPorMilla >= 2.0) {
+                veredicto = '✅ ¡ACEPTAR! Excelente oferta';
+                clase = 'excelente';
+                aceptada = true;
+            } else if (dolaresPorMilla >= 1.5) {
+                veredicto = '🟡 CONSIDERAR. Revisa tráfico';
+                clase = 'considerar';
+                aceptada = true;
+            } else {
+                veredicto = '❌ RECHAZAR. No es rentable';
+                clase = 'rechazar';
+                aceptada = false;
+            }
+            
+            if (aceptada) {
+                gananciaAcumulada += pago;
+                totalOrdenes++;
+                veredicto += '\n💰 Sumado $' + pago + ' a tu meta';
+            }
+            
+            resultadoDiv.innerHTML = 
+                '<div style="font-size:1.2em; margin-bottom:10px; font-weight:700; white-space:pre-line;">' + veredicto + '</div>' +
+                '<div style="margin-bottom:8px;">📊 $' + dolaresPorMilla.toFixed(2) + '/milla</div>' +
+                '<div style="font-size:0.9em; opacity:0.8;">Pago: $' + pago + ' | Distancia: ' + distancia + 'mi</div>';
+            
+            resultadoDiv.className = 'result ' + clase;
+            actualizarProgreso();
+            
+            if (aceptada) {
+                document.getElementById('pago').value = '';
+                document.getElementById('distancia').value = '';
+            }
+        }
+
+        function actualizarProgreso() {
+            const porcentaje = Math.min((gananciaAcumulada / metaHora) * 100, 100);
+            document.getElementById('progresoBarra').style.width = porcentaje + '%';
+            document.getElementById('gananciaActual').textContent = '$' + gananciaAcumulada;
+            document.getElementById('gananciaTotal').textContent = '$' + gananciaAcumulada;
+            document.getElementById('totalOrdenes').textContent = totalOrdenes;
+            
+            const tiempoTranscurrido = (new Date() - inicioSesion) / (1000 * 60 * 60);
+            const gananciaPorHora = tiempoTranscurrido > 0 ? gananciaAcumulada / tiempoTranscurrido : 0;
+            
+            if (gananciaPorHora > 0 && gananciaAcumulada < metaHora) {
+                const minutosRestantes = Math.ceil(((metaHora - gananciaAcumulada) / gananciaPorHora) * 60);
+                document.getElementById('tiempoRestante').textContent = 'Tiempo: ~' + minutosRestantes + 'min';
+            } else if (gananciaAcumulada >= metaHora) {
+                document.getElementById('tiempoRestante').textContent = '🎉 ¡Meta alcanzada!';
+            } else {
+                document.getElementById('tiempoRestante').textContent = 'Tiempo: --';
+            }
+        }
+
+        function reiniciarProgreso() {
+            if (confirm('¿Reiniciar progreso?')) {
+                gananciaAcumulada = 0;
+                totalOrdenes = 0;
+                inicioSesion = new Date();
+                actualizarProgreso();
+                document.getElementById('resultado').style.display = 'none';
+            }
+        }
+
+        function simularOrden() {
+            const pagos = [5, 7.5, 8.25, 12, 6.5, 9.75];
+            const distancias = [2.5, 3.8, 4.2, 5.5, 6.0, 3.2];
+            const randomIndex = Math.floor(Math.random() * pagos.length);
+            
+            document.getElementById('pago').value = pagos[randomIndex];
+            document.getElementById('distancia').value = distancias[randomIndex];
+        }
+
+        document.addEventListener('DOMContentLoaded', inicializarApp);
+        document.getElementById('metaHora').addEventListener('change', actualizarMeta);
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') analizarOrden();
+        });
+    </script>
+</body>
+</html>
